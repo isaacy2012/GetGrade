@@ -73,13 +73,19 @@ def format_results(results: Dict[str, List[ECSResult]]) -> str:
     return "".join(str_list)
 
 
-def email(new_results: Dict[str, List[ECSResult]]):
+def email(subject: str, new_results: Dict[str, List[ECSResult]]):
     """
     Emails the new results
+    :param subject: the subject of the email
     :param new_results: the new results
     """
-    subject = "New ECS Results" if len(new_results) > 1 else "New ECS Result"
     gmail.send_email(subject, format_results(new_results))
+
+def email_initial(results: Dict[str, List[ECSResult]]):
+    email("GetGradeECS Initialised", results)
+
+def email_subsequent(new_results: Dict[str, List[ECSResult]]):
+    email("New ECS Results" if len(results) > 1 else "New ECS Result", new_results)
 
 
 def query(db: TinyDB, epoch: int):
@@ -136,11 +142,11 @@ def query(db: TinyDB, epoch: int):
     time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     if epoch > 0:
         if len(new_results) > 0:
-            email(new_results)
             log.print_log("Email sent at: " + time_str)
             log.log("=================NEW RESULTS=================")
             log.log(format_results(new_results))
             log.log("=============================================")
+            email_subsequent(new_results)
         else:
             log.print_log("No new results at: " + time_str)
     else:
@@ -148,6 +154,7 @@ def query(db: TinyDB, epoch: int):
         log.print_log("===============INITIAL RESULTS===============")
         log.print_log(format_results(new_results))
         log.print_log("=============================================")
+        email_initial(new_results)
 
     # pprint.pprint(subject_map)
 
@@ -179,11 +186,11 @@ def main():
         if config.within_active_hours():
             try:
                 query(db, epoch)
-            except ConnectionError:
-                log.print_log("ConnectionError Handled")
+            except ConnectionError as e:
+                log.print_log(f"ConnectionError Handled {e}")
                 wait_on_exception()
-            except:
-                log.print_log("Other Error Handled")
+            except Exception as e:
+                log.print_log(f"Other Error Handled {e}")
                 wait_on_exception()
             else:
                 epoch += 1
