@@ -72,8 +72,10 @@ def format_results(results: Dict[str, List[ECSResult]]) -> str:
 
     return "".join(str_list)
 
+def email_aliveness_check():
+    gmail.send_email("Hello from GetGradeECS!", "This message is to let you know that GetGradeECS started successfully.")
 
-def email(subject: str, new_results: Dict[str, List[ECSResult]]):
+def email_results(subject: str, new_results: Dict[str, List[ECSResult]]):
     """
     Emails the new results
     :param subject: the subject of the email
@@ -81,11 +83,11 @@ def email(subject: str, new_results: Dict[str, List[ECSResult]]):
     """
     gmail.send_email(subject, format_results(new_results))
 
-def email_initial(results: Dict[str, List[ECSResult]]):
-    email("GetGradeECS Initialised", results)
+def email_initial_results(results: Dict[str, List[ECSResult]]):
+    email_results("GetGradeECS Initialised With Grades", results)
 
-def email_subsequent(new_results: Dict[str, List[ECSResult]]):
-    email("New ECS Results" if len(results) > 1 else "New ECS Result", new_results)
+def email_subsequent_results(new_results: Dict[str, List[ECSResult]]):
+    email_results("New ECS Results" if len(results) > 1 else "New ECS Result", new_results)
 
 
 def query(db: TinyDB, epoch: int):
@@ -146,7 +148,7 @@ def query(db: TinyDB, epoch: int):
             log.log("=================NEW RESULTS=================")
             log.log(format_results(new_results))
             log.log("=============================================")
-            email_subsequent(new_results)
+            email_subsequent_results(new_results)
         else:
             log.print_log("No new results at: " + time_str)
     else:
@@ -154,7 +156,7 @@ def query(db: TinyDB, epoch: int):
         log.print_log("===============INITIAL RESULTS===============")
         log.print_log(format_results(new_results))
         log.print_log("=============================================")
-        email_initial(new_results)
+        email_initial_results(new_results)
 
     # pprint.pprint(subject_map)
 
@@ -180,6 +182,8 @@ def main():
     # Initialize gmail
     gmail.init()
 
+    email_aliveness_check()
+
     seed()
     epoch = 0
     while True:
@@ -193,11 +197,12 @@ def main():
                 log.print_log(f"Other Error Handled {e}")
                 wait_on_exception()
             else:
-                epoch += 1
                 # Sleep
                 sleep_minutes = 15 + (random() * (30 - 15))
                 log.log_sleep(sleep_minutes)
                 time.sleep(sleep_minutes * 60)
+            finally:
+                epoch += 1
         else:
             sleep_seconds = config.seconds_till_active_hours_begin()
             log.log_sleep(sleep_seconds / 60.0)
