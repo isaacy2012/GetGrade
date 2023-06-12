@@ -87,7 +87,7 @@ def email_initial_results(results: Dict[str, List[ECSResult]]):
     email_results("GetGradeECS Initialised With Grades", results)
 
 def email_subsequent_results(new_results: Dict[str, List[ECSResult]]):
-    email_results("New ECS Results" if len(results) > 1 else "New ECS Result", new_results)
+    email_results("New ECS Results" if len(new_results) > 1 else "New ECS Result", new_results)
 
 
 def query(db: TinyDB, epoch: int):
